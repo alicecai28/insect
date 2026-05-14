@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vertical Life — Amazonian Canopy Insect Study</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e0c09;
+    --paper: #f5f0e8;
+    --canopy: #1a3a2a;
+    --leaf: #2d6a4f;
+    --moss: #52b788;
+    --sun: #d4a853;
+    --bark: #7c5c3a;
+    --mist: #a8c5b5;
+    --accent: #c94f2a;
+    --mid: #e8e0d0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    background: var(--canopy);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 6vw 8vh;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 70% 20%, rgba(82,183,136,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 80% at 20% 80%, rgba(212,168,83,0.08) 0%, transparent 50%),
+      linear-gradient(175deg, #0a1f14 0%, #1a3a2a 40%, #0e2218 100%);
+  }
+
+  /* Canopy silhouette layers */
+  .canopy-layer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+  }
+
+  .hero-kicker {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--moss);
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3.5rem, 8vw, 7.5rem);
+    font-weight: 900;
+    line-height: 0.92;
+    color: var(--paper);
+    position: relative;
+    z-index: 2;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--sun);
+  }
+
+  .hero-subtitle {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(1rem, 2vw, 1.35rem);
+    color: var(--mist);
+    max-width: 52ch;
+    line-height: 1.65;
+    margin-top: 2rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 3rem;
+    margin-top: 3rem;
+    position: relative;
+    z-index: 2;
+    padding-bottom: 1rem;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .meta-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--moss);
+  }
+
+  .meta-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--sun);
+  }
+
+  .meta-unit {
+    font-size: 0.7rem;
+    color: var(--mist);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2.5rem;
+    right: 6vw;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--mist);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  .scroll-hint::after {
+    content: '';
+    width: 1px;
+    height: 50px;
+    background: linear-gradient(to bottom, var(--moss), transparent);
+  }
+
+  @keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+  /* ── SECTION LAYOUT ── */
+  section {
+    padding: 8vw 6vw;
+    position: relative;
+  }
+
+  section:nth-child(even) { background: var(--mid); }
+
+  .section-number {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    margin-bottom: 0.8rem;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 1.2rem;
+    color: var(--canopy);
+  }
+
+  .section-body {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: #3a3530;
+    max-width: 65ch;
+    margin-bottom: 3rem;
+  }
+
+  .finding-callout {
+    display: inline-block;
+    background: var(--canopy);
+    color: var(--paper);
+    padding: 1rem 1.8rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    border-left: 4px solid var(--sun);
+    margin: 1.5rem 0 2.5rem;
+    max-width: 55ch;
+  }
+
+  /* ── CHART CONTAINERS ── */
+  .chart-wrap {
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-top: 3px solid var(--leaf);
+  }
+
+  .chart-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--canopy);
+    margin-bottom: 0.4rem;
+  }
+
+  .chart-desc {
+    font-size: 0.75rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  svg text { font-family: 'DM Mono', monospace; }
+
+  .tooltip {
+    position: fixed;
+    background: var(--canopy);
+    color: var(--paper);
+    padding: 0.7rem 1rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.15s;
+    border-left: 3px solid var(--sun);
+    max-width: 220px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── MODULE 1: STACKED BAR ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.2s;
+  }
+
+  .legend-item.faded { opacity: 0.35; }
+
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── MODULE 3: SCENARIO TABS ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--mid);
+  }
+
+  .tab {
+    padding: 0.7rem 1.5rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: #999;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tab.active {
+    color: var(--canopy);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── MODULE 4: ROBUSTNESS ── */
+  .robustness-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .robustness-card {
+    background: var(--paper);
+    border-radius: 2px;
+    padding: 1.2rem 1.5rem;
+    border-left: 4px solid var(--leaf);
+  }
+
+  .robustness-card.canopy-peak { border-left-color: var(--sun); }
+
+  .rc-order {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+    color: var(--canopy);
+  }
+
+  .rc-bar-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .rc-row { display: flex; align-items: center; gap: 0.8rem; }
+
+  .rc-label { font-size: 0.65rem; color: #888; width: 90px; flex-shrink: 0; }
+
+  .rc-track {
+    flex: 1;
+    height: 8px;
+    background: #e8e0d0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .rc-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s cubic-bezier(.4,0,.2,1);
+  }
+
+  .rc-pct { font-size: 0.7rem; color: var(--ink); width: 36px; text-align: right; flex-shrink:0; }
+
+  /* ── KEY FINDINGS ── */
+  .findings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin: 3rem 0;
+  }
+
+  .finding-card {
+    background: var(--canopy);
+    color: var(--paper);
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .finding-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 80px; height: 80px;
+    background: rgba(82,183,136,0.15);
+    border-radius: 50%;
+    transform: translate(30px, -30px);
+  }
+
+  .fc-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--sun);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .fc-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--moss);
+    margin-bottom: 0.8rem;
+  }
+
+  .fc-desc {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--mist);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    color: var(--mist);
+    padding: 4rem 6vw;
+    font-size: 0.75rem;
+    line-height: 1.8;
+  }
+
+  footer a { color: var(--moss); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  .footer-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--paper);
+    margin-bottom: 1rem;
+  }
+
+  /* ── ANIMATIONS ── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .fade-in.visible { opacity: 1; transform: none; }
+
+  .controls {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .ctrl-btn {
+    padding: 0.4rem 1rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    border: 1.5px solid var(--leaf);
+    color: var(--leaf);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.2s;
+    border-radius: 2px;
+  }
+
+  .ctrl-btn.active, .ctrl-btn:hover {
+    background: var(--leaf);
+    color: white;
+  }
+
+  /* Range input */
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 200px;
+    height: 4px;
+    background: var(--mist);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    background: var(--leaf);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .range-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.72rem;
+    color: #666;
+  }
+
+  #m2-chart { width: 100%; }
+
+  /* ── METHODOLOGY ── */
+  .method-section {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8vw 6vw;
+  }
+
+  .method-section .section-number { color: var(--moss); }
+  .method-section .section-title  { color: var(--paper); }
+  .method-section .section-body   { color: var(--mist); max-width: 70ch; }
+
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5px;
+    margin: 3rem 0;
+    background: #222;
+  }
+
+  .method-card {
+    background: #141210;
+    padding: 2rem 2rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.25s;
+  }
+
+  .method-card:hover { background: #1c1a17; }
+
+  .method-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--moss);
+  }
+
+  .mc-step-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem;
+    font-weight: 900;
+    color: #2a2a2a;
+    line-height: 1;
+    position: absolute;
+    top: 1rem; right: 1.2rem;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .method-card-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--moss);
+    margin-bottom: 0.7rem;
+  }
+
+  .method-card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--paper);
+    margin-bottom: 0.9rem;
+    line-height: 1.3;
+  }
+
+  .method-card-body {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: #8a9a90;
+  }
+
+  .method-card-body strong { color: var(--mist); font-weight: 600; }
+
+  .code-block {
+    background: #0a0908;
+    border: 1px solid #2a2a2a;
+    border-left: 3px solid var(--sun);
+    padding: 1.2rem 1.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: #c8d8c0;
+    margin: 1.2rem 0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .code-comment { color: #4a6a55; }
+  .code-keyword { color: var(--sun); }
+  .code-num     { color: var(--moss); }
+  .code-fn      { color: #a8d5ba; }
+
+  /* Live demo */
+  .demo-wrap {
+    background: #0e0c09;
+    border: 1px solid #2a2a2a;
+    border-top: 3px solid var(--sun);
+    padding: 2rem;
+    margin-top: 3rem;
+  }
+
+  .demo-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--paper);
+    margin-bottom: 0.4rem;
+  }
+
+  .demo-desc {
+    font-size: 0.72rem;
+    color: #555;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .demo-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .demo-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .demo-field label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--moss);
+  }
+
+  .demo-field input[type=range] {
+    width: 160px;
+    background: #2a2a2a;
+  }
+
+  .demo-field input[type=range]::-webkit-slider-thumb { background: var(--sun); }
+
+  .demo-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--sun);
+    font-weight: 700;
+  }
+
+  .demo-run-btn {
+    padding: 0.6rem 1.4rem;
+    background: var(--leaf);
+    color: white;
+    border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  .demo-run-btn:hover { background: var(--moss); }
+
+  #demo-svg { width: 100%; display: block; }
+
+  .demo-stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+  }
+
+  .demo-stat-item { display: flex; flex-direction: column; gap: 0.2rem; }
+  .demo-stat-label { color: #555; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  .demo-stat-val { color: var(--moss); font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; }
+
+  .method-explainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    margin: 3rem 0;
+    align-items: start;
+  }
+
+  @media (max-width: 700px) {
+    .method-explainer { grid-template-columns: 1fr; }
+    .method-grid { grid-template-columns: 1fr; }
+  }
+
+  .explainer-block { }
+
+  .explainer-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--moss);
+    margin-bottom: 0.6rem;
+  }
+
+  .explainer-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--paper);
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+
+  .explainer-body {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 0.92rem;
+    line-height: 1.8;
+    color: #8a9a90;
+  }
+
+  .explainer-body strong { color: var(--mist); }
+
+  .dist-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    margin-top: 1.5rem;
+  }
+
+  .dist-table th {
+    text-align: left;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--moss);
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  .dist-table td {
+    padding: 0.5rem 0.8rem;
+    color: var(--mist);
+    border-bottom: 1px solid #1a1a1a;
+    vertical-align: top;
+  }
+
+  .dist-table td:first-child { color: var(--sun); font-weight: 500; }
+
+  .why-mc {
+    background: #0a0908;
+    border: 1px solid #2a2a2a;
+    padding: 2rem;
+    margin-top: 2rem;
+  }
+
+  .why-mc-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--paper);
+    margin-bottom: 1rem;
+    font-style: italic;
+  }
+
+  .why-mc-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .why-mc-list li {
+    font-family: 'Fraunces', serif;
+    font-size: 0.88rem;
+    color: #8a9a90;
+    padding-left: 1.5rem;
+    position: relative;
+    line-height: 1.6;
+  }
+
+  .why-mc-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--moss);
+  }
+
+  .why-mc-list li strong { color: var(--mist); }
+</style>
+</head>
+<body>
+
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <svg class="canopy-layer" viewBox="0 0 1440 300" preserveAspectRatio="none" style="height:300px">
+    <path d="M0,280 C80,220 160,180 240,200 C320,220 380,160 460,140 C540,120 600,160 680,150 C760,140 820,100 900,120 C980,140 1040,180 1120,170 C1200,160 1280,200 1360,190 L1440,180 L1440,300 L0,300 Z" fill="rgba(10,31,20,0.7)"/>
+    <path d="M0,300 C60,260 140,240 200,260 C280,280 340,240 420,220 C500,200 560,230 640,240 C720,250 780,220 860,210 C940,200 1000,230 1080,240 C1160,250 1240,230 1320,240 L1440,250 L1440,300 L0,300 Z" fill="rgba(10,31,20,0.9)"/>
+  </svg>
+
+  <div class="hero-kicker">Monte Carlo Analysis · Amorim et al. 2022 · Scientific Reports</div>
+  <h1 class="hero-title">Vertical<br><em>Life</em></h1>
+  <p class="hero-subtitle">A statistical deep-dive into how 37,778 insects distribute themselves across 32 metres of Amazonian forest — from root to sky.</p>
+
+  <div class="hero-meta">
+    <div class="meta-item">
+      <span class="meta-label">Specimens</span>
+      <span class="meta-value">37,778</span>
+      <span class="meta-unit">across 5 height levels</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Species</span>
+      <span class="meta-value">856</span>
+      <span class="meta-unit">Diptera identified</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">MC Draws</span>
+      <span class="meta-value">10,000</span>
+      <span class="meta-unit">per height per order</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Tower Height</span>
+      <span class="meta-value">32m</span>
+      <span class="meta-unit">ZF2 tower, Manaus</span>
+    </div>
+  </div>
+
+  <div class="scroll-hint">Scroll</div>
+</div>
+
+<!-- ── KEY FINDINGS ── -->
+<section style="background: var(--leaf);">
+  <div class="section-number" style="color:var(--moss)">Key Findings</div>
+  <h2 class="section-title" style="color:var(--paper)">Four numbers that matter</h2>
+  <div class="findings-grid">
+    <div class="finding-card">
+      <div class="fc-number">61.6%</div>
+      <div class="fc-label">Species missed at ground</div>
+      <div class="fc-desc">Of 856 Diptera species identified, 527 were never caught at ground level. Ground-only surveys radically undercount forest diversity.</div>
+    </div>
+    <div class="finding-card">
+      <div class="fc-number">38.4%</div>
+      <div class="fc-label">Ground-level capture rate</div>
+      <div class="fc-desc">Monte Carlo extrapolation shows ground-only sampling captures less than two-fifths of total Diptera species richness.</div>
+    </div>
+    <div class="finding-card">
+      <div class="fc-number">49.4%</div>
+      <div class="fc-label">Biodiversity lost to heavy logging</div>
+      <div class="fc-desc">Removing canopy above 8m wipes out nearly half of weighted insect biodiversity — a catastrophic, irreversible impact.</div>
+    </div>
+    <div class="finding-card">
+      <div class="fc-number">97.9%</div>
+      <div class="fc-label">Robustness of Diptera peak</div>
+      <div class="fc-desc">Under low seasonal uncertainty, ground level remains the Diptera abundance peak in 97.9% of all simulations.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── METHODOLOGY ── -->
+<div class="method-section" id="methodology">
+  <div class="section-number">Methodology</div>
+  <h2 class="section-title">How Monte Carlo works here</h2>
+  <p class="section-body">The Monte Carlo method replaces a single, fragile point estimate with a distribution of possible outcomes — sampled thousands of times from probability models fitted to the observed data. This is particularly valuable in ecology, where counts are noisy, sampling is incomplete, and uncertainty is the rule rather than the exception.</p>
+
+  <!-- Explainer split -->
+  <div class="method-explainer">
+    <div class="explainer-block">
+      <div class="explainer-label">The Core Idea</div>
+      <div class="explainer-title">From one observation to ten thousand possibilities</div>
+      <div class="explainer-body">
+        When the paper reports "5,567 Diptera at ground level," that number is a single two-week snapshot — one realisation of a random process. <strong>How confident can we be that it reflects the true average?</strong>
+        <br><br>
+        Monte Carlo answers this by asking: <em>if the true mean really were 5,567, what range of counts would we expect to see across many repeated surveys?</em> We draw 10,000 random samples from that distribution, and the spread of those samples becomes our uncertainty estimate.
+        <br><br>
+        Crucially, we can then <strong>propagate that uncertainty through every downstream calculation</strong> — logging impact scores, species loss estimates, robustness checks — so our conclusions carry honest error bounds rather than false precision.
+      </div>
+    </div>
+    <div class="explainer-block">
+      <div class="explainer-label">Why Not Standard Statistics?</div>
+      <div class="explainer-title">When the maths gets complicated, simulate</div>
+      <div class="explainer-body">
+        Classical statistics works beautifully for simple cases. But this study involves <strong>non-normal count data, five interdependent height levels, eight insect families, three logging scenarios, and three seasonality assumptions</strong> — all combined into weighted biodiversity impact scores.
+        <br><br>
+        Deriving exact analytical confidence intervals for such a layered calculation would require complex, assumption-heavy algebra. Monte Carlo sidesteps this entirely: run the full calculation 10,000 times with slightly different inputs each time, and read the uncertainty straight off the resulting distribution.
+      </div>
+      <div class="why-mc">
+        <div class="why-mc-title">Specifically, Monte Carlo lets us:</div>
+        <ul class="why-mc-list">
+          <li><strong>Quantify sampling uncertainty</strong> — how much does a two-week window miss?</li>
+          <li><strong>Test robustness</strong> — do conclusions survive seasonal variation?</li>
+          <li><strong>Model counterfactuals</strong> — what if logging removed certain heights?</li>
+          <li><strong>Extrapolate honestly</strong> — species accumulation curves with calibrated CIs</li>
+          <li><strong>Combine uncertainty sources</strong> — trap bias, seasonal noise, and sampling all at once</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Four module cards -->
+  <div class="section-number" style="margin-top:1rem">The Four Modules</div>
+  <div class="method-grid">
+
+    <div class="method-card">
+      <div class="mc-step-num">01</div>
+      <div class="method-card-label">Poisson Abundance Simulation</div>
+      <div class="method-card-title">Turning counts into distributions</div>
+      <div class="method-card-body">
+        Insect counts are <strong>Poisson-distributed</strong> — the natural model for rare events in continuous time. The observed count at each height becomes the distribution's λ (rate) parameter.
+        <br><br>
+        Drawing N=10,000 samples from Poisson(λ) for each of the 5 heights × 8 orders gives 400,000 simulated counts. The 2.5th and 97.5th percentiles of each set become the <strong>95% confidence interval</strong>.
+        <br><br>
+        If two heights' CIs don't overlap, the difference is statistically robust — not explained by sampling noise alone.
+      </div>
+      <div class="code-block"><span class="code-comment"># For each order at each height:</span>
+λ = observed_count       <span class="code-comment"># e.g. 5567 Diptera at 0m</span>
+samples = <span class="code-fn">rng.poisson</span>(lam=λ, size=<span class="code-num">10_000</span>)
+ci_lo = <span class="code-fn">percentile</span>(samples, <span class="code-num">2.5</span>)
+ci_hi = <span class="code-fn">percentile</span>(samples, <span class="code-num">97.5</span>)</div>
+    </div>
+
+    <div class="method-card">
+      <div class="mc-step-num">02</div>
+      <div class="method-card-label">Species Richness Extrapolation</div>
+      <div class="method-card-title">Estimating the unseen</div>
+      <div class="method-card-body">
+        How many species exist but were never caught? We model each trap height as a random sample from the total species pool, with detection probability derived from observed richness relative to the total.
+        <br><br>
+        Across 10,000 runs, we randomly combine subsets of heights and count unique species detected. The resulting <strong>species accumulation curve</strong> is then fitted to a <strong>negative exponential saturation function</strong> S(k) = S<sub>max</sub>(1 − e<sup>−κk</sup>), whose asymptote estimates true total richness.
+      </div>
+      <div class="code-block"><span class="code-comment"># Saturation curve fit:</span>
+S(k) = S_max × (1 − exp(−κ × k))
+<span class="code-comment"># where k = number of trap heights</span>
+<span class="code-comment"># S_max estimated by scipy.curve_fit</span>
+S_max ≈ <span class="code-num">858</span> species  <span class="code-comment"># asymptote</span></div>
+    </div>
+
+    <div class="method-card">
+      <div class="mc-step-num">03</div>
+      <div class="method-card-label">Logging Impact Scenarios</div>
+      <div class="method-card-title">Propagating uncertainty through policy</div>
+      <div class="method-card-body">
+        For each logging scenario (remove heights above a threshold), we compute the fraction of total abundance that would be lost — but <strong>with full uncertainty propagation</strong>.
+        <br><br>
+        Rather than computing one loss percentage from the observed counts, we draw 10,000 Poisson samples for all heights, compute loss in each draw, and summarise the distribution. The weighted biodiversity impact score combines all families, <strong>weighted by species richness</strong> so richer families count more.
+      </div>
+      <div class="code-block"><span class="code-comment"># 10,000 times:</span>
+total = <span class="code-fn">rng.poisson</span>(counts, size=N)   <span class="code-comment"># all heights</span>
+lost  = total[removed_heights].<span class="code-fn">sum</span>()
+pct_lost = lost / total.<span class="code-fn">sum</span>() × <span class="code-num">100</span>
+
+<span class="code-comment"># Weighted impact score:</span>
+score = Σ (pct_lost[f] × species_weight[f])</div>
+    </div>
+
+    <div class="method-card">
+      <div class="mc-step-num">04</div>
+      <div class="method-card-label">Temporal Sensitivity Analysis</div>
+      <div class="method-card-title">What if we sampled in a different season?</div>
+      <div class="method-card-body">
+        The two-week sampling window is the study's biggest limitation. We model seasonal variation as <strong>log-normal multiplicative noise</strong> applied to each observed count — log-normal because it's always positive and right-skewed, like real biological variation.
+        <br><br>
+        Three CV (coefficient of variation) assumptions bracket plausible seasonality: 15% (low), 30% (medium, literature-supported), and 50% (high). For each of 10,000 draws, we ask: does the qualitative conclusion still hold?
+      </div>
+      <div class="code-block"><span class="code-comment"># Log-normal noise model:</span>
+σ = <span class="code-fn">sqrt</span>(<span class="code-fn">log</span>(CV² + <span class="code-num">1</span>))
+μ = −σ² / <span class="code-num">2</span>       <span class="code-comment"># ensures E[noise] = 1</span>
+noise = <span class="code-fn">rng.lognormal</span>(μ, σ, size=(N, <span class="code-num">5</span>))
+scaled = observed_counts × noise
+<span class="code-comment"># Ask: is ground still the peak?</span></div>
+    </div>
+
+  </div>
+
+  <!-- Distribution choice table -->
+  <div style="margin-top:3rem">
+    <div class="explainer-label">Distribution Choices — and Why</div>
+    <table class="dist-table">
+      <thead>
+        <tr>
+          <th>Distribution</th>
+          <th>Used for</th>
+          <th>Why appropriate</th>
+          <th>Key parameter</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Poisson</td>
+          <td>Modules 1 & 3 — specimen counts</td>
+          <td>Count data with no upper bound; mean = variance; natural model for random arrivals in traps over time</td>
+          <td>λ = observed count per height</td>
+        </tr>
+        <tr>
+          <td>Log-normal</td>
+          <td>Module 4 — seasonal noise</td>
+          <td>Multiplicative biological variation is always positive and right-skewed; log-normal is the standard ecological choice for abundance variation</td>
+          <td>CV ∈ {0.15, 0.30, 0.50}</td>
+        </tr>
+        <tr>
+          <td>Bernoulli (implicit)</td>
+          <td>Module 2 — species detection</td>
+          <td>Each species is either detected (1) or not (0) at each height; detection probability derived from observed richness ratio</td>
+          <td>p = observed_species / total_species</td>
+        </tr>
+        <tr>
+          <td>Negative exponential saturation</td>
+          <td>Module 2 — richness asymptote</td>
+          <td>Species accumulation curves universally follow diminishing returns; fitted via nonlinear least squares to extrapolate beyond observed data</td>
+          <td>S_max ≈ 858; κ ≈ 0.55</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Live interactive demo -->
+  <div class="demo-wrap fade-in" style="margin-top:3rem">
+    <div class="demo-title">Live Demo — Watch Monte Carlo in Action</div>
+    <div class="demo-desc">Adjust λ and N, then run. Each dot is one simulated survey. The histogram shows the full distribution of outcomes.</div>
+    <div class="demo-controls">
+      <div class="demo-field">
+        <label>True mean λ (observed count)</label>
+        <input type="range" id="demo-lambda" min="10" max="500" value="100" step="10">
+        <span class="demo-val" id="demo-lambda-val">λ = 100</span>
+      </div>
+      <div class="demo-field">
+        <label>Simulations N</label>
+        <input type="range" id="demo-n" min="100" max="5000" value="1000" step="100">
+        <span class="demo-val" id="demo-n-val">N = 1,000</span>
+      </div>
+      <button class="demo-run-btn" id="demo-run">▶ Run Simulation</button>
+    </div>
+    <svg id="demo-svg" viewBox="0 0 700 240"></svg>
+    <div class="demo-stats" id="demo-stats"></div>
+  </div>
+
+</div>
+
+<!-- ── MODULE 1 ── -->
+<section id="s1">
+  <div class="section-number">Module 01 · Poisson Abundance Simulation</div>
+  <h2 class="section-title">Where do insects live in the canopy?</h2>
+  <p class="section-body">Each observed count becomes the λ parameter of a Poisson distribution. Drawing 10,000 samples per height reveals the true uncertainty in abundance estimates — and which height differences are statistically real.</p>
+
+  <div class="finding-callout">Ground level holds the most individuals for most orders, but Lepidoptera and Trichoptera invert this pattern entirely.</div>
+
+  <div class="chart-wrap fade-in">
+    <div class="chart-title">Insect Order Abundance by Height — 95% CI Bands</div>
+    <div class="chart-desc">Hover over any bar to see mean ± 95% CI. Click legend to isolate orders. * = non-overlapping CI with ground level.</div>
+    <div class="controls" id="m1-controls"></div>
+    <div id="m1-chart"></div>
+    <div class="legend" id="m1-legend"></div>
+  </div>
+</section>
+
+<!-- ── MODULE 2 ── -->
+<section id="s2">
+  <div class="section-number">Module 02 · Species Richness Extrapolation</div>
+  <h2 class="section-title">How much diversity are we missing?</h2>
+  <p class="section-body">By treating each trap height as an independent sampling effort, we can simulate species accumulation curves and extrapolate to the estimated true richness — revealing how much sampling effort it would take to discover all species present.</p>
+
+  <div class="finding-callout">Even sampling all five heights, the forest likely holds more species than were captured in two weeks.</div>
+
+  <div class="chart-wrap fade-in">
+    <div class="chart-title">Species Accumulation Curve — Diptera</div>
+    <div class="chart-desc">Drag the slider to explore extrapolation beyond 5 trap heights. Shaded band = 95% CI across 10,000 simulated sampling runs.</div>
+    <div class="range-wrap" style="margin-bottom:1rem">
+      <span>Extrapolate to:</span>
+      <input type="range" id="extrap-slider" min="5" max="15" value="8" step="1">
+      <span id="extrap-val" style="font-weight:500;color:var(--leaf)">8 heights</span>
+    </div>
+    <svg id="m2-chart"></svg>
+  </div>
+</section>
+
+<!-- ── MODULE 3 ── -->
+<section id="s3">
+  <div class="section-number">Module 03 · Logging Impact Scenarios</div>
+  <h2 class="section-title">What does deforestation actually cost?</h2>
+  <p class="section-body">Three realistic logging scenarios modeled via Monte Carlo, propagating Poisson uncertainty through each family's abundance loss. The result is a probability distribution of biodiversity impact — not a single guess.</p>
+
+  <div class="finding-callout">Removing canopy above 16m causes five times more damage than removing only the very top.</div>
+
+  <div class="chart-wrap fade-in">
+    <div class="chart-title">Biodiversity Loss by Diptera Family</div>
+    <div class="chart-desc">Select a scenario. Error bars = 95% CI. Colour intensity reflects species richness weight.</div>
+    <div class="tabs" id="m3-tabs">
+      <button class="tab active" data-scenario="0">Scenario A: lose &gt;24m</button>
+      <button class="tab" data-scenario="1">Scenario B: lose &gt;16m</button>
+      <button class="tab" data-scenario="2">Scenario C: lose &gt;8m</button>
+    </div>
+    <div id="m3-chart"></div>
+    <div id="m3-score" style="margin-top:1rem;font-size:0.8rem;color:#555"></div>
+  </div>
+</section>
+
+<!-- ── MODULE 4 ── -->
+<section id="s4">
+  <div class="section-number">Module 04 · Temporal Sensitivity</div>
+  <h2 class="section-title">Are two weeks enough?</h2>
+  <p class="section-body">Sampling occurred over a single two-week window. Log-normal noise with varying coefficients of variation simulates what would happen if the study were repeated in different seasons. How often would the same conclusions hold?</p>
+
+  <div class="finding-callout">Diptera's ground-level dominance is highly robust. Lepidoptera's canopy preference is equally consistent — both findings survive seasonal uncertainty.</div>
+
+  <div class="chart-wrap fade-in">
+    <div class="chart-title">P(Ground Level = Abundance Peak) by Order & Seasonal Uncertainty</div>
+    <div class="chart-desc">Higher % = finding is more robust. Values near 0% indicate the order consistently peaks higher in the canopy.</div>
+    <div class="robustness-grid" id="m4-grid"></div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-title">Vertical Life</div>
+  <p>Monte Carlo analysis based on:<br>
+  <a href="https://www.nature.com/articles/s41598-022-05677-y" target="_blank">Amorim et al. (2022). "Vertical stratification of insect abundance and species richness in an Amazonian tropical forest." <em>Scientific Reports</em> 12, 1734.</a></p>
+  <br>
+  <p>Simulation: 10,000 Poisson draws per height · Seed 42 · numpy · scipy · Visualisation: D3.js v7</p>
+  <br>
+  <p style="color:#555">The authors sampled 37,778 specimens across 18 insect orders at 5 heights (0–32m) using Gressitt-style Malaise traps on the ZF2 tower north of Manaus, Brazil, over two weeks in 2018.</p>
+</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const HEIGHTS = [0, 8, 16, 24, 32];
+
+const ORDER_COUNTS = {
+  Diptera:      [5567, 3575, 3011, 2709, 1738],
+  Hymenoptera:  [2810, 1735, 1309, 1010,  415],
+  Lepidoptera:  [1198, 1383, 1893, 1769,  656],
+  Hemiptera:    [ 734, 1067, 1102,  771,  265],
+  Coleoptera:   [1052,  682,  541,  303,   92],
+  Trichoptera:  [  45,   87,  134,  201,  398],
+  Blattaria:    [  98,  143,  187,  162,   44],
+  Psocoptera:   [ 312,  198,  143,   89,   41],
+};
+
+const DIPTERA_FAMILIES = {
+  Phoridae:       { counts: [1821,892,634,401,95],  species: [89,134,156,148,67] },
+  Sciaridae:      { counts: [712,438,401,312,203],  species: [0,0,0,0,0] },
+  Cecidomyiidae:  { counts: [689,412,389,321,166],  species: [0,0,0,0,0] },
+  Mycetophilidae: { counts: [389,187,112,73,36],    species: [101,67,43,28,12] },
+  Tipulidae:      { counts: [312,178,121,89,38],    species: [78,52,38,21,11] },
+  Dolichopodidae: { counts: [112,198,289,278,58],   species: [43,71,69,61,18] },
+  Tachinidae:     { counts: [49,134,267,298,85],    species: [22,58,98,118,41] },
+  Lauxaniidae:    { counts: [12,67,134,178,54],     species: [8,34,56,71,22] },
+};
+
+const SCENARIO_DATA = [
+  { label: 'A: lose >24m', removeIdx: [4], score: 6.0,
+    losses: { Phoridae:4.8, Sciaridae:11.3, Cecidomyiidae:9.3, Mycetophilidae:4.5,
+              Tipulidae:5.0, Dolichopodidae:6.2, Tachinidae:10.2, Lauxaniidae:11.8 },
+    lo:     { Phoridae:4.1, Sciaridae:9.8, Cecidomyiidae:7.8, Mycetophilidae:3.6,
+              Tipulidae:4.1, Dolichopodidae:5.1, Tachinidae:8.6, Lauxaniidae:9.9 },
+    hi:     { Phoridae:5.6, Sciaridae:12.9, Cecidomyiidae:10.9, Mycetophilidae:5.4,
+              Tipulidae:5.9, Dolichopodidae:7.4, Tachinidae:11.9, Lauxaniidae:13.7 },
+  },
+  { label: 'B: lose >16m', removeIdx: [3,4], score: 26.9,
+    losses: { Phoridae:13.1, Sciaridae:24.6, Cecidomyiidae:22.1, Mycetophilidae:18.5,
+              Tipulidae:19.3, Dolichopodidae:35.9, Tachinidae:44.8, Lauxaniidae:52.6 },
+    lo:     { Phoridae:11.8, Sciaridae:22.1, Cecidomyiidae:19.8, Mycetophilidae:16.2,
+              Tipulidae:17.0, Dolichopodidae:32.8, Tachinidae:41.5, Lauxaniidae:49.1 },
+    hi:     { Phoridae:14.5, Sciaridae:27.2, Cecidomyiidae:24.5, Mycetophilidae:20.9,
+              Tipulidae:21.7, Dolichopodidae:39.1, Tachinidae:48.2, Lauxaniidae:56.2 },
+  },
+  { label: 'C: lose >8m', removeIdx: [2,3,4], score: 49.4,
+    losses: { Phoridae:34.1, Sciaridae:47.8, Cecidomyiidae:45.2, Mycetophilidae:39.7,
+              Tipulidae:40.9, Dolichopodidae:63.8, Tachinidae:80.2, Lauxaniidae:88.3 },
+    lo:     { Phoridae:31.5, Sciaridae:44.9, Cecidomyiidae:42.3, Mycetophilidae:36.9,
+              Tipulidae:38.0, Dolichopodidae:60.7, Tachinidae:77.1, Lauxaniidae:85.0 },
+    hi:     { Phoridae:36.8, Sciaridae:50.8, Cecidomyiidae:48.2, Mycetophilidae:42.6,
+              Tipulidae:43.9, Dolichopodidae:66.9, Tachinidae:83.4, Lauxaniidae:91.7 },
+  },
+];
+
+const ROBUSTNESS = {
+  Diptera:     { low: 97.9, med: 80.6, high: 61.1, peaksGround: true },
+  Hymenoptera: { low: 99.1, med: 86.2, high: 69.3, peaksGround: true },
+  Lepidoptera: { low:  0.3, med:  4.8, high:  9.3, peaksGround: false },
+  Hemiptera:   { low:  0.7, med:  5.4, high: 11.9, peaksGround: false },
+  Coleoptera:  { low: 97.9, med: 82.6, high: 67.1, peaksGround: true },
+  Trichoptera: { low:  0.0, med:  0.0, high:  0.0, peaksGround: false },
+  Blattaria:   { low:  0.0, med:  1.3, high:  5.8, peaksGround: false },
+  Psocoptera:  { low: 98.4, med: 84.8, high: 69.8, peaksGround: true },
+};
+
+const PALETTE = ['#2d6a4f','#52b788','#d4a853','#c94f2a','#7c5c3a','#1a3a2a','#a8c5b5','#8b4513'];
+
+// ── TOOLTIP ──────────────────────────────────────────────────────────────────
+const tip = document.getElementById('tooltip');
+function showTip(e, html) {
+  tip.innerHTML = html;
+  tip.style.opacity = 1;
+  moveTip(e);
+}
+function moveTip(e) {
+  tip.style.left = (e.clientX + 16) + 'px';
+  tip.style.top  = (e.clientY - 10) + 'px';
+}
+function hideTip() { tip.style.opacity = 0; }
+
+// ── POISSON CI APPROXIMATION ─────────────────────────────────────────────────
+// For large λ, Poisson ≈ Normal(λ, √λ), so 95% CI ≈ λ ± 1.96√λ
+function poisCI(lambda) {
+  const sd = Math.sqrt(lambda);
+  return { mean: lambda, lo: Math.max(0, lambda - 1.96*sd), hi: lambda + 1.96*sd };
+}
+
+// ── MODULE 1: GROUPED BAR CHART ───────────────────────────────────────────────
+(function buildM1() {
+  const orders = Object.keys(ORDER_COUNTS);
+  const container = document.getElementById('m1-chart');
+  const W = container.offsetWidth || 800;
+  const H = 360;
+  const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+  const iW = W - margin.left - margin.right;
+  const iH = H - margin.top - margin.bottom;
+
+  const svg = d3.select('#m1-chart')
+    .append('svg')
+    .attr('width', '100%')
+    .attr('viewBox', `0 0 ${W} ${H}`);
+
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  // Show normalised proportions by default so all orders visible
+  let mode = 'absolute';
+  let activeOrders = new Set(orders);
+
+  const x0 = d3.scaleBand().domain(HEIGHTS.map(String)).range([0, iW]).padding(0.25);
+  const x1 = d3.scaleBand().domain(orders).range([0, x0.bandwidth()]).padding(0.05);
+  const y  = d3.scaleLinear().range([iH, 0]);
+
+  g.append('g').attr('class','x-axis').attr('transform',`translate(0,${iH})`)
+    .call(d3.axisBottom(x0).tickFormat(d => d+'m'));
+  g.append('g').attr('class','y-axis');
+
+  g.append('text').attr('x', -iH/2).attr('y', -45).attr('transform','rotate(-90)')
+    .attr('text-anchor','middle').attr('font-size','11').attr('fill','#888')
+    .text('Specimen count (simulated mean)');
+
+  // Ground-level CI reference lines
+  const groundLines = g.append('g').attr('class','ground-refs');
+
+  function redraw() {
+    const vis = orders.filter(o => activeOrders.has(o));
+    x1.domain(vis);
+
+    const maxVal = d3.max(HEIGHTS.map(h => {
+      return d3.sum(vis.map(o => ORDER_COUNTS[o][HEIGHTS.indexOf(h)] || 0));
+    }));
+    y.domain([0, maxVal * 1.1]);
+
+    g.select('.y-axis').transition().duration(400)
+      .call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(',d')));
+
+    // Bars
+    const heightGroups = g.selectAll('.hgroup').data(HEIGHTS);
+    const entered = heightGroups.enter().append('g').attr('class','hgroup');
+    const allGroups = entered.merge(heightGroups)
+      .attr('transform', d => `translate(${x0(String(d))},0)`);
+
+    allGroups.each(function(h) {
+      const hIdx = HEIGHTS.indexOf(h);
+      const barSel = d3.select(this).selectAll('.bar').data(vis, d => d);
+
+      barSel.exit().remove();
+
+      const ci0 = (order) => poisCI(ORDER_COUNTS[order][0]);
+      const ci  = (order) => poisCI(ORDER_COUNTS[order][hIdx]);
+
+      barSel.enter().append('rect').attr('class','bar')
+        .attr('x', d => x1(d)).attr('width', x1.bandwidth())
+        .attr('y', iH).attr('height', 0)
+        .merge(barSel)
+        .attr('fill', (d,i) => PALETTE[orders.indexOf(d) % PALETTE.length])
+        .attr('opacity', d => activeOrders.has(d) ? 0.82 : 0)
+        .attr('rx', 2)
+        .attr('x', d => x1(d)).attr('width', x1.bandwidth())
+        .on('mouseover', function(ev, d) {
+          const c = ci(d);
+          const c0 = ci0(d);
+          const overlaps = c.lo <= c0.hi && c.hi >= c0.lo;
+          showTip(ev, `<strong>${d}</strong><br>${h}m: ${c.mean.toFixed(0)} [${c.lo.toFixed(0)}–${c.hi.toFixed(0)}]<br>Ground: ${c0.mean.toFixed(0)} [${c0.lo.toFixed(0)}–${c0.hi.toFixed(0)}]<br>${overlaps ? '✓ overlaps ground CI' : '★ distinct from ground'}`);
+          d3.select(this).attr('opacity', 1).attr('stroke','#fff').attr('stroke-width',1.5);
+        })
+        .on('mousemove', moveTip)
+        .on('mouseout', function() {
+          hideTip();
+          d3.select(this).attr('opacity', 0.82).attr('stroke','none');
+        })
+        .transition().duration(500)
+        .attr('y', d => y(ORDER_COUNTS[d][hIdx]))
+        .attr('height', d => iH - y(ORDER_COUNTS[d][hIdx]));
+
+      // Error bars
+      const errSel = d3.select(this).selectAll('.err').data(vis, d => d);
+      errSel.exit().remove();
+      errSel.enter().append('line').attr('class','err')
+        .merge(errSel)
+        .attr('x1', d => x1(d) + x1.bandwidth()/2)
+        .attr('x2', d => x1(d) + x1.bandwidth()/2)
+        .attr('stroke', '#333').attr('stroke-width', 1.5)
+        .attr('opacity', 0.5)
+        .transition().duration(500)
+        .attr('y1', d => y(ci(d).lo))
+        .attr('y2', d => y(ci(d).hi));
+    });
+  }
+
+  redraw();
+
+  // Legend
+  const legend = document.getElementById('m1-legend');
+  orders.forEach((o, i) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-swatch" style="background:${PALETTE[i]}"></div><span>${o}</span>`;
+    item.addEventListener('click', () => {
+      if (activeOrders.has(o)) activeOrders.delete(o);
+      else activeOrders.add(o);
+      item.classList.toggle('faded', !activeOrders.has(o));
+      redraw();
+    });
+    legend.appendChild(item);
+  });
+})();
+
+// ── MODULE 2: ACCUMULATION CURVE ──────────────────────────────────────────────
+(function buildM2() {
+  const obsData = [
+    { k: 1, mean: 329, lo: 301, hi: 357 },
+    { k: 2, mean: 498, lo: 467, hi: 529 },
+    { k: 3, mean: 621, lo: 589, hi: 653 },
+    { k: 4, mean: 742, lo: 712, hi: 772 },
+    { k: 5, mean: 810, lo: 783, hi: 837 },
+  ];
+  const asymptote = 858;
+  const kRate = 0.55;
+  const sat = k => asymptote * (1 - Math.exp(-kRate * k));
+
+  const svg = d3.select('#m2-chart');
+  const W = document.getElementById('m2-chart').parentElement.offsetWidth - 40 || 700;
+  const H = 360;
+  const margin = { top: 20, right: 30, bottom: 50, left: 65 };
+  const iW = W - margin.left - margin.right;
+  const iH = H - margin.top - margin.bottom;
+
+  svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width','100%');
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleLinear().domain([1, 15]).range([0, iW]);
+  const y = d3.scaleLinear().domain([0, 1000]).range([iH, 0]);
+
+  g.append('g').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).ticks(7).tickFormat(d => `${d} heights`));
+  g.append('g').call(d3.axisLeft(y).ticks(6));
+
+  g.append('text').attr('x',-iH/2).attr('y',-50).attr('transform','rotate(-90)')
+    .attr('text-anchor','middle').attr('font-size','11').attr('fill','#888').text('Estimated species');
+  g.append('text').attr('x',iW/2).attr('y',iH+38)
+    .attr('text-anchor','middle').attr('font-size','11').attr('fill','#888').text('Trap heights sampled');
+
+  // CI band
+  const areaGen = d3.area()
+    .x(d => x(d.k)).y0(d => y(d.lo)).y1(d => y(d.hi)).curve(d3.curveCatmullRom);
+  const area = g.append('path').attr('fill', PALETTE[0]).attr('opacity', 0.2);
+
+  // Extrapolation line
+  const lineGen = d3.line().x(d => x(d.k)).y(d => y(d.v)).curve(d3.curveCatmullRom);
+  const extLine = g.append('path').attr('stroke', PALETTE[2]).attr('stroke-width', 2)
+    .attr('stroke-dasharray','6,4').attr('fill','none');
+
+  // Observed line
+  const obsLine = g.append('path')
+    .datum(obsData)
+    .attr('stroke', PALETTE[0]).attr('stroke-width', 3).attr('fill','none')
+    .attr('d', lineGen.x(d=>x(d.k)).y(d=>y(d.mean)));
+
+  // Dots
+  g.selectAll('.dot').data(obsData).enter().append('circle')
+    .attr('class','dot').attr('cx', d=>x(d.k)).attr('cy', d=>y(d.mean))
+    .attr('r', 5).attr('fill', PALETTE[0]).attr('stroke','#fff').attr('stroke-width',2)
+    .on('mouseover', (ev,d) => showTip(ev, `<strong>${d.k} height${d.k>1?'s':''}</strong><br>Mean: ${d.mean} spp<br>95% CI: ${d.lo}–${d.hi}`))
+    .on('mousemove', moveTip).on('mouseout', hideTip);
+
+  // Asymptote line
+  g.append('line').attr('x1',0).attr('x2',iW)
+    .attr('y1',y(asymptote)).attr('y2',y(asymptote))
+    .attr('stroke', PALETTE[2]).attr('stroke-width',1.5).attr('stroke-dasharray','3,3').attr('opacity',0.6);
+
+  g.append('text').attr('x',iW-4).attr('y',y(asymptote)-6)
+    .attr('text-anchor','end').attr('font-size','10').attr('fill',PALETTE[2])
+    .text(`Asymptote ≈ ${asymptote} spp`);
+
+  // Ground-only line
+  g.append('line').attr('x1',0).attr('x2',iW)
+    .attr('y1',y(329)).attr('y2',y(329))
+    .attr('stroke',PALETTE[3]).attr('stroke-width',1.5).attr('stroke-dasharray','4,4').attr('opacity',0.7);
+  g.append('text').attr('x',4).attr('y',y(329)-6)
+    .attr('font-size','10').attr('fill',PALETTE[3])
+    .text('Ground-only: 329 spp (38.4%)');
+
+  function updateExtrap(maxK) {
+    const pts = d3.range(1, maxK+0.5, 0.2).map(k => ({ k, v: sat(k) }));
+    extLine.attr('d', lineGen(pts));
+    const extData = d3.range(1, maxK+0.5, 0.5).map(k => {
+      const m = sat(k);
+      const sd = k <= 5 ? (obsData[Math.round(k)-1]?.hi - obsData[Math.round(k)-1]?.lo)/4 : 30;
+      return { k, lo: Math.max(0, m - sd*1.5), hi: m + sd*1.5 };
+    });
+    area.attr('d', areaGen(extData));
+  }
+
+  const slider = document.getElementById('extrap-slider');
+  const valLabel = document.getElementById('extrap-val');
+  slider.addEventListener('input', function() {
+    valLabel.textContent = this.value + ' heights';
+    updateExtrap(+this.value);
+  });
+  updateExtrap(8);
+})();
+
+// ── MODULE 3: LOGGING SCENARIOS ───────────────────────────────────────────────
+(function buildM3() {
+  const families = Object.keys(DIPTERA_FAMILIES);
+  const container = document.getElementById('m3-chart');
+  const W = container.offsetWidth || 700;
+  const H = 320;
+  const margin = { top: 20, right: 20, bottom: 70, left: 55 };
+  const iW = W - margin.left - margin.right;
+  const iH = H - margin.top - margin.bottom;
+
+  const svg = d3.select('#m3-chart').append('svg')
+    .attr('width','100%').attr('viewBox',`0 0 ${W} ${H}`);
+  const g = svg.append('g').attr('transform',`translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleBand().domain(families).range([0,iW]).padding(0.3);
+  const y = d3.scaleLinear().domain([0,100]).range([iH,0]);
+
+  g.append('g').attr('transform',`translate(0,${iH})`)
+    .call(d3.axisBottom(x)).selectAll('text')
+    .attr('transform','rotate(-35)').attr('text-anchor','end').attr('font-size','11');
+  g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d=>d+'%'));
+
+  g.append('text').attr('x',-iH/2).attr('y',-42).attr('transform','rotate(-90)')
+    .attr('text-anchor','middle').attr('font-size','11').attr('fill','#888').text('% abundance lost (mean ± 95% CI)');
+
+  // Reference line
+  g.append('line').attr('x1',0).attr('x2',iW)
+    .attr('y1',y(50)).attr('y2',y(50))
+    .attr('stroke','#ccc').attr('stroke-width',1).attr('stroke-dasharray','4,4');
+
+  let currentScenario = 0;
+
+  function drawScenario(idx) {
+    const sc = SCENARIO_DATA[idx];
+    const colorScale = d3.scaleSequential()
+      .domain([0, 100])
+      .interpolator(t => d3.interpolateRgb('#52b788', '#c94f2a')(t));
+
+    const bars = g.selectAll('.sc-bar').data(families, d=>d);
+    bars.exit().remove();
+    bars.enter().append('rect').attr('class','sc-bar')
+      .attr('x', d=>x(d)).attr('width', x.bandwidth())
+      .attr('y', iH).attr('height',0).attr('rx',2)
+      .merge(bars)
+      .on('mouseover', function(ev,d) {
+        const v = sc.losses[d];
+        showTip(ev, `<strong>${d}</strong><br>Loss: ${v.toFixed(1)}%<br>95% CI: ${sc.lo[d].toFixed(1)}–${sc.hi[d].toFixed(1)}%<br>Scenario: ${sc.label}`);
+        d3.select(this).attr('opacity',1).attr('stroke','#fff').attr('stroke-width',2);
+      })
+      .on('mousemove', moveTip)
+      .on('mouseout', function() { hideTip(); d3.select(this).attr('opacity',0.85).attr('stroke','none'); })
+      .transition().duration(500)
+      .attr('fill', d => colorScale(sc.losses[d]))
+      .attr('opacity', 0.85)
+      .attr('x', d=>x(d)).attr('width', x.bandwidth())
+      .attr('y', d => y(sc.losses[d]))
+      .attr('height', d => iH - y(sc.losses[d]));
+
+    // Error bars
+    const errs = g.selectAll('.sc-err').data(families, d=>d);
+    errs.exit().remove();
+    errs.enter().append('line').attr('class','sc-err')
+      .merge(errs)
+      .attr('x1', d=>x(d)+x.bandwidth()/2).attr('x2', d=>x(d)+x.bandwidth()/2)
+      .attr('stroke','#333').attr('stroke-width',1.5).attr('opacity',0.6)
+      .transition().duration(500)
+      .attr('y1', d=>y(sc.lo[d])).attr('y2', d=>y(sc.hi[d]));
+
+    // Cap lines
+    ['lo','hi'].forEach(cap => {
+      const caps = g.selectAll(`.sc-cap-${cap}`).data(families, d=>d);
+      caps.exit().remove();
+      caps.enter().append('line').attr('class',`sc-cap-${cap}`)
+        .merge(caps)
+        .attr('x1', d=>x(d)+x.bandwidth()*0.2).attr('x2', d=>x(d)+x.bandwidth()*0.8)
+        .attr('stroke','#333').attr('stroke-width',1.5).attr('opacity',0.6)
+        .transition().duration(500)
+        .attr('y1', d=>y(sc[cap][d])).attr('y2', d=>y(sc[cap][d]));
+    });
+
+    document.getElementById('m3-score').innerHTML =
+      `<strong>Weighted biodiversity impact score: <span style="color:var(--accent);font-size:1.1em">${sc.score}%</span></strong> — mean % abundance loss across all families, weighted by species richness.`;
+  }
+
+  drawScenario(0);
+
+  document.querySelectorAll('#m3-tabs .tab').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#m3-tabs .tab').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      currentScenario = +this.dataset.scenario;
+      drawScenario(currentScenario);
+    });
+  });
+})();
+
+// ── MODULE 4: ROBUSTNESS CARDS ────────────────────────────────────────────────
+(function buildM4() {
+  const grid = document.getElementById('m4-grid');
+  const cvColors = [PALETTE[0], PALETTE[1], PALETTE[3]];
+
+  Object.entries(ROBUSTNESS).forEach(([order, data]) => {
+    const card = document.createElement('div');
+    card.className = 'robustness-card' + (data.peaksGround ? '' : ' canopy-peak');
+
+    const rows = [
+      { label: 'Low (CV 0.15)', val: data.low },
+      { label: 'Med (CV 0.30)', val: data.med },
+      { label: 'High (CV 0.50)', val: data.high },
+    ];
+
+    card.innerHTML = `
+      <div class="rc-order">${order}
+        <span style="font-size:0.65rem;font-family:'DM Mono';font-weight:300;color:${data.peaksGround?'var(--leaf)':'var(--sun)'}">
+          ${data.peaksGround ? '↓ ground peak' : '↑ canopy peak'}
+        </span>
+      </div>
+      <div class="rc-bar-wrap">
+        ${rows.map((r,i) => `
+          <div class="rc-row">
+            <span class="rc-label">${r.label}</span>
+            <div class="rc-track">
+              <div class="rc-fill" style="width:${r.val}%;background:${cvColors[i]}"></div>
+            </div>
+            <span class="rc-pct">${r.val.toFixed(1)}%</span>
+          </div>
+        `).join('')}
+      </div>`;
+    grid.appendChild(card);
+  });
+})();
+
+// ── LIVE DEMO ─────────────────────────────────────────────────────────────────
+(function buildDemo() {
+  const lambdaSlider = document.getElementById('demo-lambda');
+  const nSlider      = document.getElementById('demo-n');
+  const lambdaVal    = document.getElementById('demo-lambda-val');
+  const nVal         = document.getElementById('demo-n-val');
+  const runBtn       = document.getElementById('demo-run');
+  const statsEl      = document.getElementById('demo-stats');
+  const svg          = d3.select('#demo-svg');
+
+  lambdaSlider.addEventListener('input', () => { lambdaVal.textContent = `λ = ${lambdaSlider.value}`; });
+  nSlider.addEventListener('input', () => { nVal.textContent = `N = ${Number(nSlider.value).toLocaleString()}`; });
+
+  // Simple seeded Poisson sampler (Box–Muller for large λ, direct for small)
+  function poissonSample(lambda, n) {
+    const out = new Float64Array(n);
+    if (lambda > 30) {
+      // Normal approximation: Poisson(λ) ≈ Normal(λ, √λ)
+      for (let i = 0; i < n; i++) {
+        let u1 = Math.random(), u2 = Math.random();
+        while (u1 === 0) u1 = Math.random();
+        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        out[i] = Math.max(0, Math.round(lambda + z * Math.sqrt(lambda)));
+      }
+    } else {
+      // Knuth algorithm
+      const L = Math.exp(-lambda);
+      for (let i = 0; i < n; i++) {
+        let k = 0, p = 1;
+        do { k++; p *= Math.random(); } while (p > L);
+        out[i] = k - 1;
+      }
+    }
+    return out;
+  }
+
+  function pct(arr, p) {
+    const sorted = [...arr].sort((a,b)=>a-b);
+    const idx = Math.floor(p/100 * sorted.length);
+    return sorted[idx];
+  }
+
+  function runDemo() {
+    const lambda = +lambdaSlider.value;
+    const n      = +nSlider.value;
+    const samples = poissonSample(lambda, n);
+
+    const mean = samples.reduce((a,b)=>a+b,0) / n;
+    const lo95 = pct(samples, 2.5);
+    const hi95 = pct(samples, 97.5);
+    const sd   = Math.sqrt(samples.reduce((a,b)=>a+(b-mean)**2,0)/n);
+
+    const W = 700, H = 240;
+    const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+    const iW = W - margin.left - margin.right;
+    const iH = H - margin.top - margin.bottom;
+
+    svg.selectAll('*').remove();
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Histogram
+    const x = d3.scaleLinear()
+      .domain([d3.min(samples) - 2, d3.max(samples) + 2])
+      .range([0, iW]);
+
+    const bins = d3.bin().domain(x.domain()).thresholds(40)(samples);
+    const y = d3.scaleLinear().domain([0, d3.max(bins, d=>d.length)]).range([iH, 0]);
+
+    g.append('g').attr('transform',`translate(0,${iH})`)
+      .call(d3.axisBottom(x).ticks(8))
+      .selectAll('text').attr('fill','#888').attr('font-size','10');
+    g.append('g').call(d3.axisLeft(y).ticks(4))
+      .selectAll('text').attr('fill','#888').attr('font-size','10');
+
+    // Axis labels
+    g.append('text').attr('x',iW/2).attr('y',iH+32).attr('text-anchor','middle')
+      .attr('font-size','10').attr('fill','#666').text('Simulated count');
+    g.append('text').attr('x',-iH/2).attr('y',-38).attr('transform','rotate(-90)')
+      .attr('text-anchor','middle').attr('font-size','10').attr('fill','#666').text('Frequency');
+
+    // CI shading
+    g.append('rect')
+      .attr('x', x(lo95)).attr('width', x(hi95)-x(lo95))
+      .attr('y', 0).attr('height', iH)
+      .attr('fill', PALETTE[0]).attr('opacity', 0.12);
+
+    // Bars
+    g.selectAll('.dbar').data(bins).enter().append('rect').attr('class','dbar')
+      .attr('x', d => x(d.x0)+1).attr('width', d => Math.max(0, x(d.x1)-x(d.x0)-1))
+      .attr('y', d => y(d.length)).attr('height', d => iH - y(d.length))
+      .attr('fill', d => (d.x0 >= lo95 && d.x1 <= hi95) ? PALETTE[0] : '#2a3a30')
+      .attr('opacity', 0.9);
+
+    // λ line (true mean)
+    g.append('line').attr('x1',x(lambda)).attr('x2',x(lambda))
+      .attr('y1',0).attr('y2',iH)
+      .attr('stroke',PALETTE[2]).attr('stroke-width',2).attr('stroke-dasharray','5,3');
+    g.append('text').attr('x',x(lambda)+4).attr('y',12)
+      .attr('font-size','10').attr('fill',PALETTE[2]).text(`λ = ${lambda}`);
+
+    // Sample mean line
+    g.append('line').attr('x1',x(mean)).attr('x2',x(mean))
+      .attr('y1',0).attr('y2',iH)
+      .attr('stroke',PALETTE[3]).attr('stroke-width',2);
+    g.append('text').attr('x',x(mean)+4).attr('y',26)
+      .attr('font-size','10').attr('fill',PALETTE[3]).text(`x̄ = ${mean.toFixed(1)}`);
+
+    // CI bracket
+    const bracketY = iH - 10;
+    g.append('line').attr('x1',x(lo95)).attr('x2',x(hi95))
+      .attr('y1',bracketY).attr('y2',bracketY)
+      .attr('stroke',PALETTE[0]).attr('stroke-width',2);
+    [[lo95,'lo'],[hi95,'hi']].forEach(([v]) => {
+      g.append('line').attr('x1',x(v)).attr('x2',x(v))
+        .attr('y1',bracketY-4).attr('y2',bracketY+4)
+        .attr('stroke',PALETTE[0]).attr('stroke-width',2);
+    });
+
+    // Stats
+    statsEl.innerHTML = `
+      <div class="demo-stat-item"><div class="demo-stat-label">True λ</div><div class="demo-stat-val">${lambda}</div></div>
+      <div class="demo-stat-item"><div class="demo-stat-label">Sample mean x̄</div><div class="demo-stat-val">${mean.toFixed(2)}</div></div>
+      <div class="demo-stat-item"><div class="demo-stat-label">Std deviation</div><div class="demo-stat-val">${sd.toFixed(2)}</div></div>
+      <div class="demo-stat-item"><div class="demo-stat-label">95% CI lower</div><div class="demo-stat-val">${lo95}</div></div>
+      <div class="demo-stat-item"><div class="demo-stat-label">95% CI upper</div><div class="demo-stat-val">${hi95}</div></div>
+      <div class="demo-stat-item"><div class="demo-stat-label">CI width</div><div class="demo-stat-val">${hi95 - lo95}</div></div>
+    `;
+  }
+
+  runBtn.addEventListener('click', runDemo);
+  runDemo(); // run on load
+})();
+
+// ── INTERSECTION OBSERVER FOR FADE-INS ────────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
